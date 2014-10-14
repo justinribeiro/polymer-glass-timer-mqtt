@@ -1,0 +1,130 @@
+<!-- Import Polymer -->
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<script src="mqttws31.js"></script>
+
+<!-- Define your custom element -->
+<polymer-element name="glass-timer" attributes="title host port topic debug">
+    <template>
+      <style>
+        /* Create a Layout Boundary */
+        #statpack {
+          left: 10px;
+          bottom: 10px;
+          width: 250px;
+          height: 100px;
+          overflow: hidden;
+          position: absolute;
+        }
+        
+        #glass-status {
+          position: relative;
+          vertical-align: top;
+          z-index: 30;
+          bottom: 0;
+          padding: 0.5em;
+        }
+
+        #glass-status h1, h2 {
+          margin: 0.6em 0;
+        }
+      </style>
+
+      <div id="statpack">
+        <aside id="glass-status">
+          <h1>{{title}}</h1>
+          <h2>{{timer}}</h2>
+        </aside>
+      </div>
+    </template>
+
+    <script>
+        Polymer('glass-timer', {
+            title: 'Glass Timer',
+            host: '',
+            port: '',
+            topic: '#',
+            client: null,
+            timeout: 3000,
+            debug: false,
+            created: function() {
+              this.clientid = "glasstimer_" + parseInt(Math.random() * 1000, 10);
+            },
+            ready: function() {
+              this.client = new Messaging.Client(
+                              this.host, 
+                              parseInt(this.port),
+                              this.clientid
+                            );
+
+              this.client.onConnectionLost = this.onConnectionLost.bind(this);
+              this.client.onMessageArrived = this.onMessageArrived.bind(this);
+
+              //
+              // For the sake of this example, we'll just define this here.
+              // Ideally, this would be passed in as an attribute
+              //
+              this.options = {
+                  timeout: 3,
+                  useSSL: false,
+                  cleanSession: true,
+                  onSuccess: this.onConnect.bind(this),
+                  onFailure: this.onFailure.bind(this)
+              };
+
+              this.connect();
+            },
+            connect: function(){
+              this.client.connect(this.options);
+            },
+            onConnect: function() {
+              if (this.debug) {
+                console.log("glass-timer: Connection Establisted to " + this.host + ":" + this.port);
+                console.log("glass-timer: Subscribed to topic: " + this.topic);
+              }
+              this.client.subscribe(this.topic, {qos: 0});
+            },
+            onFailure: function(response) {
+              if (this.debug) {
+                console.log("glass-timer: Connection Failed, " + response.errorMessage);
+                console.log("glass-timer: Attempting reconnection in" + this.timeout + "ms");
+              }
+              setTimeout(this.connect, this.timeout);
+            },
+            onConnectionLost: function(response) {
+              if (this.debug) {
+                console.log("glass-timer: Connection Lost, " + response.errorMessage);
+                console.log("glass-timer: Attempting reconnection in " + this.timeout + "ms");
+              }
+              setTimeout(this.connect.bind(this), this.timeout);
+            },
+            onMessageArrived: function(response) {
+              var ret_topic = response.destinationName;
+              var ret_payload = response.payloadString;
+
+              if (this.debug) {
+                console.log("glass-timer: Message Arrived, topic:" + ret_topic + " payload:" + ret_payload);
+              }
+ 
+              // We're expecting a number from Glass
+              if (typeof Number(ret_payload) === 'number'){
+                var prettyTime = this.msToPretty(ret_payload);
+                this.timer = prettyTime;
+              }
+
+            },
+            // Let's just keep this simple, no fancy
+            msToPretty: function(rawMs) {
+              var ms = rawMs % 1000;
+              rawMs = (rawMs - ms) / 1000;
+
+              var secs = rawMs % 60;
+              rawMs = (rawMs - secs) / 60;
+              
+              var mins = rawMs % 60;
+
+              return mins + 'm ' + secs + 's ' + ms + 'ms ';
+            }
+        });
+    </script>
+
+</polymer-element>

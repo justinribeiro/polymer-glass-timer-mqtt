@@ -1,0 +1,26 @@
+{
+    "name": "polymer-glass-timer-mqtt",
+    "version": "0.1.0",
+    "description": "Google Glass Timer to MQTT Broker to Web",
+    "private": true,
+    "license": "Apache-2",
+    "main": "glass-timer.html",
+      "authors": [
+        "Justin Ribeiro <justin@justinribeiro.com>"
+      ],
+    "keywords": [
+        "polymer",
+        "web-component",
+        "web-components",
+        "mqtt",
+        "google-glass"
+    ],
+    "ignore": [
+        "**/.*",
+        "node_modules",
+        "bower_components"
+    ],
+    "dependencies": {
+        "polymer": "Polymer/polymer#^0.4.1"
+    }
+}
